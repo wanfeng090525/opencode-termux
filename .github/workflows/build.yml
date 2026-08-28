@@ -91,7 +91,7 @@ jobs:
           echo "deb [arch=arm64] http://ports.ubuntu.com/ubuntu-ports/ noble-updates main universe restricted multiverse" | sudo tee -a /etc/apt/sources.list.d/arm64.list >/dev/null
           echo "deb [arch=arm64] http://ports.ubuntu.com/ubuntu-ports/ noble-security main universe restricted multiverse" | sudo tee -a /etc/apt/sources.list.d/arm64.list >/dev/null
           sudo apt-get -qq update
-          sudo apt-get -qq install -y qemu-user-static libc6:arm64
+          sudo apt-get -qq install -y qemu-user qemu-user-static libc6:arm64
       - name: 冒烟：qemu 实跑内层 Bun ELF 并校验版本
         run: |
           set -euo pipefail
