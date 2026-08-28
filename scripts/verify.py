@@ -15,11 +15,15 @@ RAW_LINKER = b"/lib/ld-linux-aarch64.so.1"
 
 
 def main() -> int:
-    if len(sys.argv) < 2:
-        print("usage: python3 scripts/verify.py <wrapped> [expect_bun_size]", file=sys.stderr)
+    args = [a for a in sys.argv[1:] if not a.startswith("--")]
+    dump = None
+    if "--dump-inner" in sys.argv:
+        dump = sys.argv[sys.argv.index("--dump-inner") + 1]
+    if not args:
+        print("usage: python3 scripts/verify.py <wrapped> [expect_bun_size] [--dump-inner OUT]", file=sys.stderr)
         return 2
-    path = sys.argv[1]
-    expect = int(sys.argv[2]) if len(sys.argv) > 2 and sys.argv[2].isdigit() else None
+    path = args[0]
+    expect = int(args[1]) if len(args) > 1 and args[1].isdigit() else None
 
     data = open(path, "rb").read()
     print(f"file={path} size={len(data)}")
@@ -63,6 +67,12 @@ def main() -> int:
     print(f"final_size==file_size = {ok_size}")
 
     print("file(1):", subprocess.run(["file", "-b", path], capture_output=True, text=True).stdout.strip())
+
+    if dump:
+        with open(dump, "wb") as f:
+            f.write(bun)
+        print(f"dumped inner aarch64 Bun ELF ({len(bun)} bytes) -> {dump}")
+
     return 0 if (ok_arch and ok_size) else 1
 
 

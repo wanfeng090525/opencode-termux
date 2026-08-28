@@ -12,7 +12,7 @@ REPO ?= wanfeng090525/opencode-termux
 OUTPUT_ROOT := $(if $(ODIR),$(ODIR),$(CURDIR)/packing)
 STAGE := artifacts/staged/prefix
 
-.PHONY: help wrap stage deb pacman all batch clean release-upload
+.PHONY: help wrap stage deb pacman all batch clean release-upload smoke
 
 help:
 	@echo "OpenCode Termux build helper"
@@ -85,6 +85,11 @@ package_out:
 clean:
 	rm -rf runtime .cache artifacts opencode_*.deb
 	rm -rf packing/deb packing/pacman/pkg packing/pacman/src
+
+# Run-level smoke: extract inner aarch64 Bun ELF and run it via qemu + arm64 glibc.
+# Needs: apt install qemu-user-static + libc6:arm64 (dpkg --add-architecture arm64).
+smoke:
+	./scripts/smoke_qemu.sh runtime/opencode-termux "$(VER)"
 
 # Release upload: batch build -> push all assets to a release tag (create or clobber).
 release-upload:

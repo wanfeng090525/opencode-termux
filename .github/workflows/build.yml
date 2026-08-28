@@ -68,6 +68,28 @@ jobs:
             runtime/opencode-termux
           retention-days: 7
 
+  run-test:
+    name: 运行级验证（QEMU arm64）
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: opencode-aarch64
+          path: out
+      - name: 准备 QEMU + aarch64 glibc sysroot
+        run: |
+          sudo dpkg --add-architecture arm64
+          sudo apt-get -qq update
+          sudo apt-get -qq install -y qemu-user-static libc6:arm64
+      - name: 冒烟：qemu 实跑内层 Bun ELF 并校验版本
+        run: |
+          set -euo pipefail
+          VER=$(ls out/opencode_*_aarch64.deb | sed -E 's#.*opencode_([0-9]+\.[0-9]+\.[0-9]+)_aarch64\.deb#\1#')
+          echo "expected ver = $VER"
+          ./scripts/smoke_qemu.sh out/runtime/opencode-termux "$VER"
+
   publish:
     name: 发布 Release
     runs-on: ubuntu-latest
