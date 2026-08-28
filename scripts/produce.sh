@@ -45,8 +45,8 @@ if [[ -f "$CACHE_BIN" ]]; then
   rm -f "$CACHE_BIN"
 fi
 
-printf '%s\n' "$VER" > "$ROOT/runtime/VERSION"
 mkdir -p "$ROOT/runtime" "$ROOT/.cache"
+printf '%s\n' "$VER" > "$ROOT/runtime/VERSION"
 WORK="$(mktemp -d)"
 trap 'rm -rf "$WORK"' EXIT
 
