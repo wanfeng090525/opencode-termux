@@ -4,13 +4,9 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: 上游 npm 发布版本号（未填直链时使用；默认 1.18.23，可自行选择）
+        description: 上游 npm 发布版本号（默认 1.18.23，可自行选择）
         required: false
         default: "1.18.23"
-      source_url:
-        description: 可选。opencode-linux-arm64 下载直链，填了则优先于 version 使用
-        required: false
-        default: ""
       publish:
         description: 构建完成后是否发布到 GitHub Release
         required: false
@@ -26,40 +22,23 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: 解析版本与来源
+      - name: 解析版本
         env:
           VERSION_IN: ${{ inputs.version }}
-          SOURCE_URL: ${{ inputs.source_url }}
           REF_NAME: ${{ github.ref_name }}
           EVENT: ${{ github.event_name }}
         run: |
           set -euo pipefail
-          USE_NPM=0
           if [[ "$EVENT" == "push" ]]; then
-            VER="${REF_NAME#v}"; URL=""; USE_NPM=1
-          elif [[ -n "$SOURCE_URL" ]]; then
-            URL="$SOURCE_URL"
-            if [[ "$URL" =~ ([0-9]+)\.([0-9]+)\.([0-9]+) ]]; then
-              VER="${BASH_REMATCH[1]}.${BASH_REMATCH[2]}.${BASH_REMATCH[3]}"
-            else
-              VER="${VERSION_IN:-1.18.23}"
-            fi
+            VER="${REF_NAME#v}"
           else
-            VER="${VERSION_IN:-1.18.23}"; URL=""; USE_NPM=1
+            VER="${VERSION_IN:-1.18.23}"
           fi
           echo "OPENCODE_VER=$VER" >> "$GITHUB_ENV"
-          echo "SOURCE_URL=$URL"   >> "$GITHUB_ENV"
-          echo "USE_NPM=$USE_NPM"  >> "$GITHUB_ENV"
-          echo "版本=$VER · 来源=${URL:-npm@$VER}"
+          echo "构建版本=$VER (npm: opencode-linux-arm64@$VER)"
 
-      - name: 包装（npm 或直链）
-        run: |
-          set -euo pipefail
-          if [[ "$USE_NPM" == "1" ]]; then
-            ./scripts/produce.sh "$OPENCODE_VER"
-          else
-            ./scripts/produce.sh "$OPENCODE_VER" --url "$SOURCE_URL"
-          fi
+      - name: 包装（npm opencode-linux-arm64@VER）
+        run: ./scripts/produce.sh "$OPENCODE_VER"
 
       - name: 组装 .deb
         run: VERSION="$OPENCODE_VER" ./scripts/package_deb.sh

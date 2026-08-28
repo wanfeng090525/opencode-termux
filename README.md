@@ -48,7 +48,7 @@ scripts/launcher.sh        TTY/锁清理启动器（deb 里安装为 bin/opencod
 scripts/package_deb.sh     打 .deb（ar + 控制文件，无 dpkg-deb 架构限制）
 scripts/verify.py          结构校验（BUNWRAP1/内嵌 ELF/trailer/末尾大小）
 Makefile                   wrap / deb / all 目标（VER 可传参）
-.github/workflows/build.yml CI 手动构建（可选版本 / 直链 / 发布）
+.github/workflows/build.yml CI 手动构建（可选版本 / 发布）
 runtime/opencode-termux    包装后的独立运行二进制（约 184MB，gitignore）
 ```
 
@@ -75,8 +75,11 @@ opencode run "hi"
 make all                # = produce.sh + package_deb.sh（默认 1.18.23）
 make all VER=1.19.0     # 指定版本
 ./scripts/produce.sh 1.18.23            # 只要 wrapped 二进制
-VERSION=1.18.23 ./scripts/package_deb.sh # un 只要 .deb（需先有 runtime/opencode-termux）
+VERSION=1.18.23 ./scripts/package_deb.sh # 只要 .deb（需先有 runtime/opencode-termux）
 ```
+
+> 上游 CLI 只从 npm 获取（`opencode-linux-arm64@<ver>`），不提供任何"填链接"入口；请勿使用
+> `opencode-desktop-*`（桌面 GUI 包，非 Bun CLI 二进制）。
 
 ## CI（GitHub Actions）
 
@@ -84,8 +87,7 @@ VERSION=1.18.23 ./scripts/package_deb.sh # un 只要 .deb（需先有 runtime/op
 
 | 输入 | 默认 | 说明 |
 |---|---|---|
-| `version` | `1.18.23` | npm 发布版本号（未填直链时使用），可自行选择 |
-| `source_url` | 空 | 预编译二进制直链，填了优先于 `version` |
+| `version` | `1.18.23` | npm 发布版本号，可自行选择 |
 | `publish` | off | 是否把产物发布到 Release |
 
 产物（`.deb`）以 workflow artifact 形式下载。
