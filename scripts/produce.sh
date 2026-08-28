@@ -51,6 +51,14 @@ fi
 [[ -x "$RAW" ]] || { echo "FATAL: no executable at $RAW" >&2; exit 1; }
 echo "[produce] upstream: $(file -b "$RAW")"
 
+# Clear early error: Termux needs the Bun CLI binary, NOT the desktop GUI package.
+if [[ "$(head -c4 "$RAW")" != "$(printf '\177ELF')" ]]; then
+  echo "FATAL: selected source is not an ELF binary: $(file -b "$RAW")" >&2
+  echo "  For Termux you need the Bun CLI package: npm 'opencode-linux-arm64@<ver>' (default 1.18.23)." >&2
+  echo "  Do NOT use desktop GUI packages (opencode-desktop-linux-*.rpm/.deb/AppImage)." >&2
+  exit 1
+fi
+
 if [[ ! -f "$LOADER/build.py" ]]; then
   echo "[produce] cloning bun-termux-loader"
   git clone --depth 1 "$LOADER_REPO" "$LOADER" >/dev/null 2>&1
