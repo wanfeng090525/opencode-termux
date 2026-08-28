@@ -3,7 +3,7 @@
 把上游 npm 的 `opencode-linux-arm64`（glibc 链接的 Bun 编译产物）用 `bun-termux-loader`
 包成一个能在 **Termux（Android / Bionic）** 直接运行的独立二进制，并产出 `.deb` 安装包。
 
-默认构建版本 **1.18.23**，版本可自行选择（见下文"构建"）。
+默认构建版本 **1.18.25**，版本可自行选择（见下文"构建"）。
 
 参考实现：[Hope2333/opencode-termux](https://github.com/Hope2333/opencode-termux)
 
@@ -69,11 +69,11 @@ apt install -y glibc openssl-glibc bash ncurses
 
 ```bash
 # Path A: deb
-dpkg -i opencode_1.18.23_aarch64.deb
+dpkg -i opencode_1.18.25_aarch64.deb
 # Path B: pacman
-pacman -U opencode-1.18.23-1-aarch64.pkg.tar.xz
+pacman -U opencode-1.18.25-1-aarch64.pkg.tar.xz
 
-opencode --version        # → 1.18.23
+opencode --version        # → 1.18.25
 opencode run "hi"
 ```
 
@@ -82,10 +82,10 @@ opencode run "hi"
 
 ## 构建（本地，无需 Termux）
 
-版本默认 1.18.23，可自行选择；`PKG=both|deb|pacman`，`ODIR` + `MIX=1` 控制输出落盘：
+版本默认 1.18.25，可自行选择；`PKG=both|deb|pacman`，`ODIR` + `MIX=1` 控制输出落盘：
 
 ```bash
-make all VER=1.18.23 PKG=both     # wrap + stage + deb + pacman
+make all VER=1.18.25 PKG=both     # wrap + stage + deb + pacman
 make all VER=1.19.0 PKG=deb
 make deb                           # 只出 .deb（需先 stage）
 make pacman                        # 只出 pacman（需先 stage；无需 makepkg）
@@ -94,7 +94,7 @@ make pacman                        # 只出 pacman（需先 stage；无需 makep
 批量构建 + 发布（发行版 tag 不存在会自动创建，已存在则覆盖资产）：
 
 ```bash
-make batch VERS='1.18.23 1.19.0' PKG=deb ODIR=~/oct-out
+make batch VERS='1.18.25 1.19.0' PKG=deb ODIR=~/oct-out
 make release-upload TAG=Push260828 VERS='1.18.[20-23]' REPO=wanfeng090525/opencode-termux
 ```
 
@@ -107,7 +107,7 @@ make release-upload TAG=Push260828 VERS='1.18.[20-23]' REPO=wanfeng090525/openco
 
 | 输入 | 默认 | 说明 |
 |---|---|---|
-| `version` | `1.18.23` | npm 发布版本号，可自行选择 |
+| `version` | `1.18.25` | npm 发布版本号，可自行选择 |
 | `publish` | off | 是否把产物发布到 Release |
 
 产物（`.deb` 与 `.pkg.tar.xz`）以 workflow artifact 形式下载；勾选 `publish` 会上传 Release `v<ver>`。

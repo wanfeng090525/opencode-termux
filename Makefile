@@ -2,7 +2,7 @@
 SHELL := /bin/bash
 .DEFAULT_GOAL := help
 
-VER ?= 1.18.23
+VER ?= 1.18.25
 VERS ?=
 PKG ?= both
 ODIR ?=

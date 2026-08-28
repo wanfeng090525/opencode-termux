@@ -4,9 +4,9 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: 上游 npm 发布版本号（默认 1.18.23，可自行选择）
+        description: 上游 npm 发布版本号（默认 1.18.25，可自行选择）
         required: false
-        default: "1.18.23"
+        default: "1.18.25"
       publish:
         description: 构建完成后是否发布到 GitHub Release
         required: false
