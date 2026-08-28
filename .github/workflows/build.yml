@@ -86,18 +86,27 @@ jobs:
     if: >
       (github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')) ||
       (github.event_name == 'workflow_dispatch' && inputs.publish)
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v4
       - uses: actions/download-artifact@v4
         with:
           name: opencode-aarch64
           path: out
-      - name: 发布
+      - name: 发布（不存在则创建，存在则覆盖资产）
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -euo pipefail
-          VER=$(ls out/opencode_*_aarch64.deb 2>/dev/null | sed -E 's#.*opencode_([0-9]+\.[0-9]+\.[0-9]+)_aarch64\.deb#\1#' | head -n1)
-          [[ -n "$VER" ]] || { echo "no deb"; exit 1; }
-          gh release create "v$VER" out/opencode_${VER}_aarch64.deb -R "$GITHUB_REPOSITORY" --generate-notes --target "$GITHUB_SHA" || \
-          gh release upload "v$VER" out/opencode_${VER}_aarch64.deb -R "$GITHUB_REPOSITORY" --clobber
+          DEB=$(ls out/opencode_*_aarch64.deb 2>/dev/null | head -n1)
+          [[ -n "$DEB" ]] || { echo "no deb found"; exit 1; }
+          VER=$(basename "$DEB" | sed -E 's#opencode_([0-9]+\.[0-9]+\.[0-9]+)_aarch64\.deb#\1#')
+          TAG="v$VER"
+          if gh release view "$TAG" -R "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
+            echo "release $TAG exists -> overwrite asset"
+            gh release upload "$TAG" "$DEB" -R "$GITHUB_REPOSITORY" --clobber
+          else
+            echo "create release $TAG"
+            gh release create "$TAG" "$DEB" -R "$GITHUB_REPOSITORY" --generate-notes --target "$GITHUB_SHA"
+          fi
