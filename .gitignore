@@ -1,0 +1,6 @@
+# Build outputs (regenerate with make / not committed)
+runtime/
+*.deb
+.cache/
+__pycache__/
+*.pyc

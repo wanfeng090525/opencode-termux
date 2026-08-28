@@ -1,0 +1,103 @@
+name: Build OpenCode for Termux
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 上游 npm 发布版本号（未填直链时使用；默认 1.18.23，可自行选择）
+        required: false
+        default: "1.18.23"
+      source_url:
+        description: 可选。opencode-linux-arm64 下载直链，填了则优先于 version 使用
+        required: false
+        default: ""
+      publish:
+        description: 构建完成后是否发布到 GitHub Release
+        required: false
+        default: false
+        type: boolean
+  push:
+    tags: ["v*"]
+
+jobs:
+  build:
+    name: 包装 + 打 deb
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: 解析版本与来源
+        env:
+          VERSION_IN: ${{ inputs.version }}
+          SOURCE_URL: ${{ inputs.source_url }}
+          REF_NAME: ${{ github.ref_name }}
+          EVENT: ${{ github.event_name }}
+        run: |
+          set -euo pipefail
+          USE_NPM=0
+          if [[ "$EVENT" == "push" ]]; then
+            VER="${REF_NAME#v}"; URL=""; USE_NPM=1
+          elif [[ -n "$SOURCE_URL" ]]; then
+            URL="$SOURCE_URL"
+            if [[ "$URL" =~ ([0-9]+)\.([0-9]+)\.([0-9]+) ]]; then
+              VER="${BASH_REMATCH[1]}.${BASH_REMATCH[2]}.${BASH_REMATCH[3]}"
+            else
+              VER="${VERSION_IN:-1.18.23}"
+            fi
+          else
+            VER="${VERSION_IN:-1.18.23}"; URL=""; USE_NPM=1
+          fi
+          echo "OPENCODE_VER=$VER" >> "$GITHUB_ENV"
+          echo "SOURCE_URL=$URL"   >> "$GITHUB_ENV"
+          echo "USE_NPM=$USE_NPM"  >> "$GITHUB_ENV"
+          echo "版本=$VER · 来源=${URL:-npm@$VER}"
+
+      - name: 包装（npm 或直链）
+        run: |
+          set -euo pipefail
+          if [[ "$USE_NPM" == "1" ]]; then
+            ./scripts/produce.sh "$OPENCODE_VER"
+          else
+            ./scripts/produce.sh "$OPENCODE_VER" --url "$SOURCE_URL"
+          fi
+
+      - name: 组装 .deb
+        run: VERSION="$OPENCODE_VER" ./scripts/package_deb.sh
+
+      - name: 结构校验
+        run: |
+          set -euo pipefail
+          file runtime/opencode-termux
+          python3 scripts/verify.py runtime/opencode-termux
+
+      - name: 上传产物
+        uses: actions/upload-artifact@v4
+        with:
+          name: opencode-aarch64
+          path: |
+            opencode_*.deb
+            runtime/opencode-termux
+          retention-days: 7
+
+  publish:
+    name: 发布 Release
+    runs-on: ubuntu-latest
+    needs: build
+    if: >
+      (github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')) ||
+      (github.event_name == 'workflow_dispatch' && inputs.publish)
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          name: opencode-aarch64
+          path: out
+      - name: 发布
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          VER=$(ls out/opencode_*_aarch64.deb 2>/dev/null | sed -E 's#.*opencode_([0-9]+\.[0-9]+\.[0-9]+)_aarch64\.deb#\1#' | head -n1)
+          [[ -n "$VER" ]] || { echo "no deb"; exit 1; }
+          gh release create "v$VER" out/opencode_${VER}_aarch64.deb -R "$GITHUB_REPOSITORY" --generate-notes --target "$GITHUB_SHA" || \
+          gh release upload "v$VER" out/opencode_${VER}_aarch64.deb -R "$GITHUB_REPOSITORY" --clobber
