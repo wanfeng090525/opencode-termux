@@ -1,0 +1,55 @@
+# PKGBUILD for OpenCode on Termux (consumes a staged prefix via $STAGE_DIR)
+pkgname=opencode
+pkgver=0.0.0
+pkgrel=1
+pkgdesc='OpenCode AI coding assistant for Termux (bun-termux-loader wrapped, plugin hooks)'
+arch=('aarch64')
+url='https://github.com/anomalyco/opencode'
+license=('MIT')
+options=('!strip' '!debug')
+
+depends=('bash' 'ncurses' 'glibc' 'openssl-glibc')
+optdepends=(
+    'ripgrep: faster search'
+    'wl-clipboard: Wayland clipboard'
+)
+source=()
+sha256sums=()
+
+STAGE_DIR="${STAGE_DIR:-}"
+prefix="${prefix:-/data/data/com.termux/files/usr}"
+
+package() {
+    [[ -n "$STAGE_DIR" ]] || { echo "STAGE_DIR not set" >&2; exit 1; }
+    [[ -d "$STAGE_DIR" ]] || { echo "stage prefix missing: $STAGE_DIR" >&2; exit 1; }
+    mkdir -p "$pkgdir$prefix"
+    cp -a "$STAGE_DIR/." "$pkgdir$prefix/"
+}
+
+post_install() {
+    hook_runner="${prefix}/lib/opencode/tools/run-system-skills.sh"
+    if [[ -x "$hook_runner" ]]; then
+        OPENCODE_HOOK_STRICT=0 OPENCODE_HOOK_ENABLE_NETWORK=0 "$hook_runner" post_upgrade || true
+    fi
+}
+
+post_upgrade() {
+    hook_runner="${prefix}/lib/opencode/tools/run-system-skills.sh"
+    if [[ -x "$hook_runner" ]]; then
+        OPENCODE_HOOK_STRICT=0 OPENCODE_HOOK_ENABLE_NETWORK=0 "$hook_runner" post_upgrade || true
+    fi
+}
+
+pre_remove() {
+    hook_runner="${prefix}/lib/opencode/tools/run-system-skills.sh"
+    if [[ -x "$hook_runner" ]]; then
+        OPENCODE_HOOK_STRICT=0 OPENCODE_HOOK_ENABLE_NETWORK=0 "$hook_runner" pre_remove || true
+    fi
+}
+
+post_remove() {
+    hook_runner="${prefix}/lib/opencode/tools/run-system-skills.sh"
+    if [[ -x "$hook_runner" ]]; then
+        OPENCODE_HOOK_STRICT=0 OPENCODE_HOOK_ENABLE_NETWORK=0 "$hook_runner" post_remove || true
+    fi
+}

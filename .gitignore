@@ -1,6 +1,12 @@
 # Build outputs (regenerate with make / not committed)
 runtime/
+artifacts/
 *.deb
+*.pkg.tar.xz
+packing/pacman/pkg/
+packing/pacman/src/
+packing/pacman/.makepkg.conf
+packing/pacman/.PKGBUILD
 .cache/
 __pycache__/
 *.pyc

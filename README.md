@@ -44,12 +44,18 @@
 
 ```
 scripts/produce.sh         npm 下载 opencode-linux-arm64@VER + bun-termux-loader 打包
-scripts/launcher.sh        TTY/锁清理启动器（deb 里安装为 bin/opencode）
-scripts/package_deb.sh     打 .deb（ar + 控制文件，无 dpkg-deb 架构限制）
-scripts/verify.py          结构校验（BUNWRAP1/内嵌 ELF/trailer/末尾大小）
-Makefile                   wrap / deb / all 目标（VER 可传参）
-.github/workflows/build.yml CI 手动构建（可选版本 / 发布）
-runtime/opencode-termux    包装后的独立运行二进制（约 184MB，gitignore）
+scripts/launcher.sh        TTY/锁清理启动器（deb/pacman 里安装为 bin/opencode）
+scripts/build.sh           组装安装前缀 artifacts/staged/prefix（launcher+运行时+插件工具+钩子）
+scripts/hooks/run-system-skills.sh   系统技能钩子（post_install/post_upgrade/pre_remove/post_remove）
+scripts/tools/plugin-manager.sh      插件生命周期：install/update/rollback/patch/verify
+scripts/tools/plugin-selfcheck.sh    插件与配置自检
+scripts/package_deb.sh      打 .deb（ar + 控制文件，含 postinst/prerm/postrm 钩子）
+scripts/package_pacman.sh   打 pacman .pkg.tar.xz（makepkg -A，可跨主机架构）
+packing/pacman/PKGBUILD     pacman 构建定义
+scripts/verify.py           结构校验（BUNWRAP1/内嵌 ELF/trailer/末尾大小）
+Makefile                    wrap / stage / deb / pacman / batch / release-upload
+.github/workflows/build.yml CI 构建 deb+pacman / 发布
+runtime/opencode-termux     包装后的独立运行二进制（约 184MB，gitignore）
 ```
 
 ## 依赖（Termux 上）
@@ -59,23 +65,37 @@ apt install -y glibc-repo && apt update
 apt install -y glibc openssl-glibc bash ncurses
 ```
 
-## 安装
+## 安装（二选一）
 
 ```bash
+# Path A: deb
 dpkg -i opencode_1.18.23_aarch64.deb
+# Path B: pacman
+pacman -U opencode-1.18.23-1-aarch64.pkg.tar.xz
+
 opencode --version        # → 1.18.23
 opencode run "hi"
 ```
 
+安装 / 升级 / 移除时会触发系统技能钩子（`run-system-skills.sh`）。默认不预置任何系统技能清单，
+但插件体系已就绪：见 `lib/opencode/tools/plugin-manager.sh`（`plugin-manager.sh install/update/rollback`）。
+
 ## 构建（本地，无需 Termux）
 
-版本默认 1.18.23，可自行选择：
+版本默认 1.18.23，可自行选择；`PKG=both|deb|pacman`，`ODIR` + `MIX=1` 控制输出落盘：
 
 ```bash
-make all                # = produce.sh + package_deb.sh（默认 1.18.23）
-make all VER=1.19.0     # 指定版本
-./scripts/produce.sh 1.18.23            # 只要 wrapped 二进制
-VERSION=1.18.23 ./scripts/package_deb.sh # 只要 .deb（需先有 runtime/opencode-termux）
+make all VER=1.18.23 PKG=both     # wrap + stage + deb + pacman
+make all VER=1.19.0 PKG=deb
+make deb                           # 只出 .deb（需先 stage）
+make pacman                        # 只出 pacman（需先 stage + 主机有 makepkg）
+```
+
+批量构建 + 发布（发行版 tag 不存在会自动创建，已存在则覆盖资产）：
+
+```bash
+make batch VERS='1.18.23 1.19.0' PKG=deb ODIR=~/oct-out
+make release-upload TAG=Push260828 VERS='1.18.[20-23]' REPO=wanfeng090525/opencode-termux
 ```
 
 > 上游 CLI 只从 npm 获取（`opencode-linux-arm64@<ver>`），不提供任何"填链接"入口；请勿使用
@@ -90,7 +110,7 @@ VERSION=1.18.23 ./scripts/package_deb.sh # 只要 .deb（需先有 runtime/openc
 | `version` | `1.18.23` | npm 发布版本号，可自行选择 |
 | `publish` | off | 是否把产物发布到 Release |
 
-产物（`.deb`）以 workflow artifact 形式下载。
+产物（`.deb` 与 `.pkg.tar.xz`）以 workflow artifact 形式下载；勾选 `publish` 会上传 Release `v<ver>`。
 
 ## 许可证
 

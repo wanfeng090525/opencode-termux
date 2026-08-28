@@ -17,7 +17,7 @@ on:
 
 jobs:
   build:
-    name: 包装 + 打 deb
+    name: 构建 deb + pacman
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -40,14 +40,23 @@ jobs:
       - name: 包装（npm opencode-linux-arm64@VER）
         run: ./scripts/produce.sh "$OPENCODE_VER"
 
-      - name: 组装 .deb
-        run: VERSION="$OPENCODE_VER" ./scripts/package_deb.sh
-
       - name: 结构校验
         run: |
           set -euo pipefail
           file runtime/opencode-termux
           python3 scripts/verify.py runtime/opencode-termux
+
+      - name: 组装安装前缀（stage）
+        run: ./scripts/build.sh
+
+      - name: 构建 .deb
+        run: VERSION="$OPENCODE_VER" ./scripts/package_deb.sh
+
+      - name: 构建 pacman（需要 makepkg）
+        run: |
+          sudo apt-get -qq update
+          sudo apt-get -qq install -y pacman-package-manager
+          VERSION="$OPENCODE_VER" ./scripts/package_pacman.sh
 
       - name: 上传产物
         uses: actions/upload-artifact@v4
@@ -55,6 +64,7 @@ jobs:
           name: opencode-aarch64
           path: |
             opencode_*.deb
+            packing/pacman/opencode-*.pkg.tar.xz
             runtime/opencode-termux
           retention-days: 7
 
@@ -79,13 +89,19 @@ jobs:
         run: |
           set -euo pipefail
           DEB=$(ls out/opencode_*_aarch64.deb 2>/dev/null | head -n1)
+          PKG=$(ls out/packing/pacman/opencode-*.pkg.tar.xz 2>/dev/null | head -n1)
           [[ -n "$DEB" ]] || { echo "no deb found"; exit 1; }
+          [[ -n "$PKG" ]] || { echo "no pacman package found"; exit 1; }
           VER=$(basename "$DEB" | sed -E 's#opencode_([0-9]+\.[0-9]+\.[0-9]+)_aarch64\.deb#\1#')
           TAG="v$VER"
+          ASSETS=("$DEB" "$PKG")
           if gh release view "$TAG" -R "$GITHUB_REPOSITORY" >/dev/null 2>&1; then
-            echo "release $TAG exists -> overwrite asset"
-            gh release upload "$TAG" "$DEB" -R "$GITHUB_REPOSITORY" --clobber
+            echo "release $TAG exists -> overwrite assets"
+            gh release upload "$TAG" "${ASSETS[@]}" -R "$GITHUB_REPOSITORY" --clobber
           else
             echo "create release $TAG"
-            gh release create "$TAG" "$DEB" -R "$GITHUB_REPOSITORY" --generate-notes --target "$GITHUB_SHA"
+            gh release create "$TAG" "${ASSETS[@]}" -R "$GITHUB_REPOSITORY" \
+              --title "OpenCode for Termux v$VER" \
+              --notes "deb: \`opencode_${VER}_aarch64.deb\` · pacman: \`opencode-${VER}-1-aarch64.pkg.tar.xz\`" \
+              --target "$GITHUB_SHA"
           fi
