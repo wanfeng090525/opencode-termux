@@ -23,7 +23,7 @@ help:
 	@echo "  make wrap                          npm opencode-linux-arm64@VER + bun-termux-loader -> runtime/opencode-termux"
 	@echo "  make stage                         stage install prefix -> artifacts/staged/prefix"
 	@echo "  make deb                           build opencode_<ver>_aarch64.deb (needs stage)"
-	@echo "  make pacman                        build opencode-<ver>-1-aarch64.pkg.tar.xz (needs stage)"
+	@echo "  make pacman                        build opencode-<ver>-1-aarch64.pkg.tar.xz (needs stage, no makepkg)"
 	@echo
 	@echo "Batch + release:"
 	@echo "  make batch VERS='1.18.23 1.19.0' PKG=both ODIR=~/oct-out"

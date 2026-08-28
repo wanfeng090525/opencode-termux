@@ -52,10 +52,10 @@ jobs:
       - name: 构建 .deb
         run: VERSION="$OPENCODE_VER" ./scripts/package_deb.sh
 
-      - name: 构建 pacman（需要 makepkg）
+      - name: 构建 pacman（bsdtar 生成 .MTREE）
         run: |
           sudo apt-get -qq update
-          sudo apt-get -qq install -y pacman-package-manager
+          sudo apt-get -qq install -y libarchive-tools
           VERSION="$OPENCODE_VER" ./scripts/package_pacman.sh
 
       - name: 上传产物

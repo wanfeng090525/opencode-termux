@@ -50,7 +50,7 @@ scripts/hooks/run-system-skills.sh   系统技能钩子（post_install/post_upgr
 scripts/tools/plugin-manager.sh      插件生命周期：install/update/rollback/patch/verify
 scripts/tools/plugin-selfcheck.sh    插件与配置自检
 scripts/package_deb.sh      打 .deb（ar + 控制文件，含 postinst/prerm/postrm 钩子）
-scripts/package_pacman.sh   打 pacman .pkg.tar.xz（makepkg -A，可跨主机架构）
+scripts/package_pacman.sh   打 pacman .pkg.tar.xz（.PKGINFO+.MTREE+.INSTALL 手动组装，无需 makepkg）
 packing/pacman/PKGBUILD     pacman 构建定义
 scripts/verify.py           结构校验（BUNWRAP1/内嵌 ELF/trailer/末尾大小）
 Makefile                    wrap / stage / deb / pacman / batch / release-upload
@@ -88,7 +88,7 @@ opencode run "hi"
 make all VER=1.18.23 PKG=both     # wrap + stage + deb + pacman
 make all VER=1.19.0 PKG=deb
 make deb                           # 只出 .deb（需先 stage）
-make pacman                        # 只出 pacman（需先 stage + 主机有 makepkg）
+make pacman                        # 只出 pacman（需先 stage；无需 makepkg）
 ```
 
 批量构建 + 发布（发行版 tag 不存在会自动创建，已存在则覆盖资产）：
