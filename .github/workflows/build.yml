@@ -80,7 +80,16 @@ jobs:
           path: out
       - name: 准备 QEMU + aarch64 glibc sysroot
         run: |
+          set -euo pipefail
           sudo dpkg --add-architecture arm64
+          # Ubuntu 官方 linux-arm64 包在 ports.ubuntu.com，不在 archive/security.ubuntu.com（会导致 404）。
+          # 重建源：amd64 -> archive/security，arm64 -> ports.ubuntu.com。
+          sudo rm -f /etc/apt/sources.list.d/ubuntu.sources
+          echo "deb [arch=amd64] http://archive.ubuntu.com/ubuntu/ noble main universe restricted multiverse" | sudo tee /etc/apt/sources.list.d/amd64.list >/dev/null
+          echo "deb [arch=amd64] http://security.ubuntu.com/ubuntu/ noble-security main universe restricted multiverse" | sudo tee -a /etc/apt/sources.list.d/amd64.list >/dev/null
+          echo "deb [arch=arm64] http://ports.ubuntu.com/ubuntu-ports/ noble main universe restricted multiverse" | sudo tee /etc/apt/sources.list.d/arm64.list >/dev/null
+          echo "deb [arch=arm64] http://ports.ubuntu.com/ubuntu-ports/ noble-updates main universe restricted multiverse" | sudo tee -a /etc/apt/sources.list.d/arm64.list >/dev/null
+          echo "deb [arch=arm64] http://ports.ubuntu.com/ubuntu-ports/ noble-security main universe restricted multiverse" | sudo tee -a /etc/apt/sources.list.d/arm64.list >/dev/null
           sudo apt-get -qq update
           sudo apt-get -qq install -y qemu-user-static libc6:arm64
       - name: 冒烟：qemu 实跑内层 Bun ELF 并校验版本
